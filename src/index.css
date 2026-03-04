@@ -1,0 +1,213 @@
+@import "tailwindcss";
+
+/* ── Design Tokens ────────────────────────────────────────── */
+@theme {
+  --color-gold:   #ffcc00;
+  --color-neon:   #00ffd5;
+  --color-danger: #ff4d4d;
+  --color-deep:   #05070a;
+}
+
+:root {
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Hero Photo Animations ───────────────────────────────── */
+@keyframes heroPulseGlow {
+  0%   { box-shadow: 0 0 40px rgba(255,204,0,0.18), 0 0 80px rgba(255,204,0,0.07); }
+  50%  { box-shadow: 0 0 80px rgba(255,204,0,0.42), 0 0 160px rgba(255,204,0,0.16), 0 0 240px rgba(255,204,0,0.06); }
+  100% { box-shadow: 0 0 40px rgba(255,204,0,0.18), 0 0 80px rgba(255,204,0,0.07); }
+}
+@keyframes heroSlideIn {
+  0%   { opacity: 0; transform: translateX(70px); }
+  100% { opacity: 1; transform: translateX(0px); }
+}
+@keyframes heroTextIn {
+  0%   { opacity: 0; transform: translateX(-50px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+@keyframes badgePop {
+  0%   { opacity: 0; transform: scale(0.6); }
+  70%  { transform: scale(1.1); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes borderRotate {
+  0%   { border-color: rgba(255,204,0,0.35); }
+  50%  { border-color: rgba(255,204,0,0.7); }
+  100% { border-color: rgba(255,204,0,0.35); }
+}
+@keyframes nameFloat {
+  0%   { transform: translate3d(0, 0px, 0); }
+  50%  { transform: translate3d(0, -12px, 0); }
+  100% { transform: translate3d(0, 0px, 0); }
+}
+@keyframes wipeReveal {
+  0%   { clip-path: inset(0 100% 0 0); opacity: 1; }
+  100% { clip-path: inset(0 0% 0 0);   opacity: 1; }
+}
+@keyframes wipeRevealGold {
+  0%   { clip-path: inset(0 100% 0 0); opacity: 1; }
+  100% { clip-path: inset(0 0% 0 0);   opacity: 1; }
+}
+@keyframes goldSlowShimmer {
+  0%           { background-position: 200% center; }
+  100%         { background-position: -200% center; }
+}
+.hero-name {
+  display: block;
+  color: #ffffff;
+  clip-path: inset(0 100% 0 0);
+  animation: wipeReveal 0.85s cubic-bezier(0.77,0,0.18,1) 0.1s forwards;
+}
+.hero-name-gold {
+  display: block;
+  background: linear-gradient(90deg, #cc7700 0%, #ffcc00 40%, #fff5cc 58%, #ffcc00 75%, #cc7700 100%);
+  background-size: 300% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  clip-path: inset(0 100% 0 0);
+  animation:
+    wipeRevealGold 0.85s cubic-bezier(0.77,0,0.18,1) 0.45s forwards,
+    goldSlowShimmer 5s linear 1.5s infinite;
+}
+.hero-letter  { display: inline; }
+.hero-letter-gold { display: inline; }
+
+.hero-photo-wrap {
+  animation:
+    heroSlideIn 0.95s cubic-bezier(0.22,1,0.36,1) both,
+    heroPulseGlow 3.5s ease-in-out 1s infinite,
+    borderRotate 3.5s ease-in-out 1s infinite;
+}
+.hero-photo-wrap img {
+  transition: transform 0.65s cubic-bezier(0.22,1,0.36,1);
+}
+.hero-photo-wrap:hover img {
+  transform: scale(1.05);
+}
+.hero-text-col {
+  animation: heroTextIn 0.9s cubic-bezier(0.22,1,0.36,1) 0.15s both;
+}
+.hero-badge {
+  animation: badgePop 0.65s cubic-bezier(0.22,1,0.36,1) 0.5s both;
+}
+
+/* ── Base ─────────────────────────────────────────────────── */
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: #05070a;
+  color: white;
+  font-family: 'Outfit', sans-serif;
+}
+
+/* ── Reusable component classes ───────────────────────────── */
+.card-elite {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1.25rem;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.tag {
+  color: #ffcc00;
+  font-size: 0.82rem;
+  font-weight: 700;
+  display: block;
+  margin-bottom: 1rem;
+  border-left: 3px solid #ffcc00;
+  padding-left: 0.625rem;
+}
+
+.orbitron {
+  font-family: 'Syncopate', sans-serif;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.assess-input {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #ffcc00;
+  border-radius: 0.5rem;
+  width: 100%;
+  padding: 0.5rem 0.625rem;
+  font-size: 0.8rem;
+  margin-bottom: 0.3rem;
+  outline: none;
+}
+
+.assess-input:focus {
+  border-color: #00ffd5;
+}
+
+.assess-input option {
+  background: #05070a;
+  color: #ffcc00;
+}
+
+.field-label {
+  font-size: 0.6rem;
+  color: #aaa;
+  text-transform: uppercase;
+  margin-top: 0.3rem;
+  display: block;
+}
+
+/* ── Schedule table ───────────────────────────────────────── */
+.sched-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 3px;
+  font-size: 0.88rem;
+  table-layout: fixed;
+}
+
+.sched-table th {
+  background: rgba(255, 204, 0, 0.15);
+  color: #ffcc00;
+  padding: 14px 6px;
+  text-align: center;
+  font-family: 'Syncopate', sans-serif;
+  font-size: 0.65rem;
+  letter-spacing: 0.05em;
+}
+
+.sched-table td {
+  background: rgba(255, 255, 255, 0.02);
+  padding: 12px 6px;
+  text-align: center;
+  border-radius: 6px;
+  height: 70px;
+  vertical-align: middle;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  font-size: 0.85rem;
+}
+
+.sched-table td.day-label {
+  background: rgba(0, 255, 213, 0.1);
+  color: #00ffd5;
+  font-weight: bold;
+  font-size: 0.85rem;
+  width: 80px;
+}
+
+.sched-table td.filled {
+  background: rgba(0, 255, 213, 0.15);
+  color: white;
+  border: 1px solid #00ffd5;
+}
+
+/* ── Print / PDF styles ───────────────────────────────────── */
+@media print {
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  body { background: #000 !important; color: #fff !important; }
+  .no-print { display: none !important; }
+  .print-page { padding: 24px; max-width: 100%; }
+  svg path { stroke-width: 0.8; }
+}
