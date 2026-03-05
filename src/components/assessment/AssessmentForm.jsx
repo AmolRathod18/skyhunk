@@ -42,37 +42,79 @@ const STEPS = [
     title: "Client Info",
     subtitle: "Basic details about the client",
     icon: "👤",
-    render: (v, sv) => (
-      <div className="grid grid-cols-2 gap-4">
-        <div className="col-span-2">
-          <Input label="Full Name" id="clientName" values={v} setValues={sv} placeholder="e.g. Rahul Sharma" />
-        </div>
-        <Input label="Age (years)" id="age" values={v} setValues={sv} placeholder="25" />
-        <Select label="Gender" id="gender" values={v} setValues={sv} options={["Male", "Female", "Other"]} />
-        <Input label="Height (cm)" id="height" values={v} setValues={sv} placeholder="170" />
-        <Select label="Experience Level" id="experience" values={v} setValues={sv}
-          options={["Beginner", "Intermediate", "Advanced"]} />
-        <div className="col-span-2">
-          <div className="flex flex-col gap-1">
-            <label className="field-label">Assigned Trainer</label>
-            <div
-              className="assess-input flex items-center gap-2"
-              style={{ color: "#ffcc00", fontWeight: 700 }}
-            >
-              <span>🏆</span> Akash Athavani <span className="ml-auto text-xs text-gray-600">Head Coach</span>
+    render: (v, sv) => {
+      // ── Live slot-conflict check ──────────────────────────
+      const existing      = JSON.parse(localStorage.getItem("gym_clients") || "[]");
+      const conflictClient = existing.find(
+        (c) => c.preferredSlot === v.preferredSlot
+      );
+      const isSlotTaken    = !!conflictClient;
+      const isReturning    = v.clientName.trim() &&
+        existing.find((c) => c.clientName.trim().toLowerCase() === v.clientName.trim().toLowerCase());
+
+      return (
+        <div className="grid grid-cols-2 gap-4">
+          <div className="col-span-2">
+            <Input label="Full Name" id="clientName" values={v} setValues={sv} placeholder="e.g. Rahul Sharma" />
+          </div>
+          <Input label="Age (years)" id="age" values={v} setValues={sv} placeholder="25" />
+          <Select label="Gender" id="gender" values={v} setValues={sv} options={["Male", "Female", "Other"]} />
+          <Input label="Height (cm)" id="height" values={v} setValues={sv} placeholder="170" />
+          <Select label="Experience Level" id="experience" values={v} setValues={sv}
+            options={["Beginner", "Intermediate", "Advanced"]} />
+          <div className="col-span-2">
+            <div className="flex flex-col gap-1">
+              <label className="field-label">Assigned Trainer</label>
+              <div
+                className="assess-input flex items-center gap-2"
+                style={{ color: "#ffcc00", fontWeight: 700 }}
+              >
+                <span>🏆</span> Akash Athavani <span className="ml-auto text-xs text-gray-600">Head Coach</span>
+              </div>
             </div>
           </div>
+          <div className="col-span-2">
+            <Select label="Preferred Training Slot" id="preferredSlot" values={v} setValues={sv} options={TIME_SLOTS} />
+            {/* ── Slot conflict warning ── */}
+            {isSlotTaken ? (
+              <div className="mt-2 text-xs rounded-lg px-3 py-2 flex items-start gap-2"
+                style={{ background: "rgba(255,77,77,0.09)", color: "#ff4d4d", border: "1px solid rgba(255,77,77,0.25)" }}>
+                <span>🚫</span>
+                <span>
+                  <strong>{v.preferredSlot}</strong> is already booked by <strong>{conflictClient.clientName}</strong>.
+                  Please choose a different slot.
+                </span>
+              </div>
+            ) : (
+              <div className="mt-2 text-xs rounded-lg px-3 py-1.5 flex items-center gap-2"
+                style={{ background: "rgba(0,255,213,0.05)", color: "#00ffd5", border: "1px solid rgba(0,255,213,0.15)" }}>
+                <span>✅</span> Slot available
+              </div>
+            )}
+          </div>
+          <div className="col-span-2">
+            <Select label="Medical Condition / Flag" id="medicalFlag" values={v} setValues={sv}
+              options={["None", "Knee Pain", "Lower Back Pain", "Shoulder Injury", "Hypertension", "Diabetes", "Post Surgery"]} />
+          </div>
+          {/* ── Returning client notice ── */}
+          {isReturning && (
+            <div className="col-span-2 text-xs rounded-lg px-3 py-2 flex items-center gap-2"
+              style={{ background: "rgba(255,204,0,0.06)", color: "#ffcc00", border: "1px solid rgba(255,204,0,0.2)" }}>
+              <span>ℹ️</span> <strong>{v.clientName}</strong> is already registered — a new assessment will be added.
+            </div>
+          )}
         </div>
-        <div className="col-span-2">
-          <Select label="Preferred Training Slot" id="preferredSlot" values={v} setValues={sv} options={TIME_SLOTS} />
-        </div>
-        <div className="col-span-2">
-          <Select label="Medical Condition / Flag" id="medicalFlag" values={v} setValues={sv}
-            options={["None", "Knee Pain", "Lower Back Pain", "Shoulder Injury", "Hypertension", "Diabetes", "Post Surgery"]} />
-        </div>
-      </div>
-    ),
-    validate: (v) => v.clientName.trim() ? null : "Please enter client name.",
+      );
+    },
+    validate: (v) => {
+      if (!v.clientName.trim()) return "Please enter client name.";
+      // Block booking if slot is already taken
+      const existing = JSON.parse(localStorage.getItem("gym_clients") || "[]");
+      const conflict  = existing.find((c) => c.preferredSlot === v.preferredSlot);
+      if (conflict)
+        return `Slot "${v.preferredSlot}" is already booked by ${conflict.clientName}. Please choose another slot to continue.`;
+      return null;
+    },
   },
   {
     id: 2,

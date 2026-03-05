@@ -71,7 +71,7 @@ const SERVICES = [
   },
 ];
 
-export default function LandingPage({ onStart, onDashboard }) {
+export default function LandingPage({ onStart, onDashboard, onNutrition }) {
   const videoRef = useRef(null);
   useEffect(() => {
     const v = videoRef.current;
@@ -103,6 +103,13 @@ export default function LandingPage({ onStart, onDashboard }) {
             style={{ background: "rgba(255,255,255,0.05)", color: "#888", border: "1px solid #222" }}
           >
             Dashboard
+          </button>
+          <button
+            onClick={onNutrition}
+            className="text-xs px-3 py-2 rounded-full font-bold transition-opacity hover:opacity-80"
+            style={{ background: "rgba(0,255,213,0.08)", color: "#00ffd5", border: "1px solid rgba(0,255,213,0.25)" }}
+          >
+            Nutrition
           </button>
           <button
             onClick={onStart}
@@ -442,6 +449,7 @@ export default function LandingPage({ onStart, onDashboard }) {
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
               {[
                 { label: "Book Free Assessment", action: onStart },
+                { label: "Diet & Nutrition Guide", action: onNutrition },
               ].map(({ label, action }) => (
                 <button key={label} onClick={action} style={{ background: "none", border: "none", cursor: "pointer", textAlign: "left", fontSize: "12px", color: "#666", padding: 0, transition: "color 0.2s" }}
                   onMouseEnter={e => e.currentTarget.style.color = "#ffcc00"}

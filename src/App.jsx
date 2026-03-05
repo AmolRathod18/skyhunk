@@ -5,7 +5,9 @@ import ReportPage     from "./components/ReportPage";
 import NavTabs        from "./components/NavTabs";
 import RosterTab      from "./components/tabs/RosterTab";
 import DailyOpsTab    from "./components/tabs/DailyOpsTab";
+import NutritionPage  from "./components/NutritionPage";
 import { generateReport } from "./utils/reportGenerator";
+import { saveClient }     from "./utils/apiService";
 
 // ── Parse raw string values from AssessmentWizard ────────────
 function parseValues(v) {
@@ -162,13 +164,13 @@ export default function App() {
   const [report,    setReport]    = useState(null);
   const [rawValues, setRawValues] = useState(null);
 
-  function handleAssessmentComplete(values) {
+  async function handleAssessmentComplete(values) {
     const parsed = parseValues(values);
     const result = generateReport(parsed);
     setRawValues(values);
     setReport(result);
 
-    // ── Persist client registration so trainer dashboard can show it ──
+    // ── Persist client registration (localStorage + MongoDB if online) ──
     const bmi = values.height && values.weight
       ? (parseFloat(values.weight) / Math.pow(parseFloat(values.height) / 100, 2)).toFixed(1)
       : null;
@@ -188,16 +190,21 @@ export default function App() {
       fat:           values.fat,
       bmi,
     };
-    const existing = JSON.parse(localStorage.getItem("gym_clients") || "[]");
-    localStorage.setItem("gym_clients", JSON.stringify([...existing, entry]));
+    try {
+      await saveClient(entry);
+    } catch (err) {
+      // Slot conflict or network error — AssessmentForm already validates, this is a safety net
+      console.warn("saveClient:", err.message);
+    }
 
     setPage("report");
     window.scrollTo({ top: 0 });
   }
 
-  if (page === "landing")    return <LandingPage onStart={() => setPage("assessment")} onDashboard={() => setPage("dashboard")} />;
+  if (page === "landing")    return <LandingPage onStart={() => setPage("assessment")} onDashboard={() => setPage("dashboard")} onNutrition={() => setPage("nutrition")} />;
   if (page === "assessment") return <AssessmentWizard onComplete={handleAssessmentComplete} onBack={() => setPage("landing")} initialValues={rawValues} />;
   if (page === "report")     return <ReportPage report={report} rawValues={rawValues} onNewAssessment={() => { setRawValues(null); setPage("landing"); }} onEdit={() => setPage("assessment")} />;
   if (page === "dashboard")  return <TrainerDashboard onHome={() => setPage("landing")} />;
+  if (page === "nutrition")  return <NutritionPage onHome={() => setPage("landing")} onStart={() => setPage("assessment")} />;
   return null;
 }

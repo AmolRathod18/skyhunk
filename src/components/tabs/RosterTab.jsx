@@ -1,6 +1,7 @@
 ﻿// RosterTab.jsx — Shows only newly registered clients in the correct roster slot
 import { useState, useEffect } from "react";
 import ShiftGrid from "../roster/ShiftGrid";
+import { deleteClient } from "../../utils/apiService";
 
 // ── Slot → shift/column mapping ───────────────────────────────
 // Morning cols: [Day, 7-8, 8-9, 9-10, 10-11, 11-12]  (indices 1-5)
@@ -175,10 +176,10 @@ export default function RosterTab() {
     return () => clearInterval(id);
   }, []);
 
-  function handleDelete(id) {
+  async function handleDelete(id) {
     const updated = clients.filter((c) => c.id !== id);
     setClients(updated);
-    localStorage.setItem("gym_clients", JSON.stringify([...updated].reverse()));
+    await deleteClient(id);   // removes from localStorage + MongoDB
   }
 
   const { morningRows, eveningRows, tomorrowDay, errors } = buildMergedGrids(clients);
