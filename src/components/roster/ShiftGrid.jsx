@@ -2,12 +2,26 @@
 import { useState, useEffect } from "react";
 
 /* ── shared client pill ──────────────────────────────────── */
+// name encoding:
+//   "ClientName"      → static scheduled client  (white)
+//   "★ClientName"     → newly registered client  (gold)
+//   "★ClientName ⚠"  → slot conflict             (red)
 function ClientPill({ name, small }) {
-  const isDup      = name.endsWith(" ⚠");
-  const cleanName  = name.replace("★", "").replace(" ⚠", "").trim();
-  const color      = isDup ? "#ff4d4d"                  : "#ffcc00";
-  const bg         = isDup ? "rgba(255,77,77,0.12)"     : "rgba(255,204,0,0.1)";
-  const border     = isDup ? "rgba(255,77,77,0.25)"     : "rgba(255,204,0,0.2)";
+  const isDup   = name.endsWith(" ⚠");
+  const isNew   = name.startsWith("★");
+  const cleanName = name.replace("★", "").replace(" ⚠", "").trim();
+
+  const color  = isDup ? "#ff4d4d"
+               : isNew ? "#ffcc00"
+               :         "rgba(255,255,255,0.82)";
+  const bg     = isDup ? "rgba(255,77,77,0.12)"
+               : isNew ? "rgba(255,204,0,0.10)"
+               :         "rgba(255,255,255,0.05)";
+  const border = isDup ? "rgba(255,77,77,0.25)"
+               : isNew ? "rgba(255,204,0,0.22)"
+               :         "rgba(255,255,255,0.10)";
+  const prefix = isDup ? "⚠ " : isNew ? "★ " : "";
+
   return (
     <span style={{
       display:      "inline-block",
@@ -20,13 +34,13 @@ function ClientPill({ name, small }) {
       border:       `1px solid ${border}`,
       whiteSpace:   "nowrap",
     }}>
-      {isDup ? "⚠ " : "★ "}{cleanName}
+      {prefix}{cleanName}
     </span>
   );
 }
 
 /* ── Mobile view — day cards with slot pills ─────────────── */
-function MobileView({ title, headers, rows, highlightDay }) {
+function MobileView({ title, headers, rows, highlightDay, weekOffDays = [] }) {
   return (
     <div className="card-elite">
       <span className="tag">{title}</span>
@@ -34,8 +48,9 @@ function MobileView({ title, headers, rows, highlightDay }) {
         {rows.map((row) => {
           const dayLabel   = row[0];
           const isToday    = dayLabel === highlightDay;
+          const isWeekOff  = weekOffDays.includes(dayLabel);
           const slots      = row.slice(1);
-          const hasAny     = slots.some(cell => Array.isArray(cell) && cell.filter(Boolean).length > 0);
+          const hasAny     = !isWeekOff && slots.some(cell => Array.isArray(cell) && cell.filter(Boolean).length > 0);
 
           return (
             <div
@@ -43,8 +58,11 @@ function MobileView({ title, headers, rows, highlightDay }) {
               style={{
                 borderRadius: "10px",
                 padding:      "10px 12px",
-                background:   isToday ? "rgba(255,204,0,0.06)" : "rgba(255,255,255,0.02)",
+                background:   isWeekOff ? "rgba(255,255,255,0.01)"
+                            : isToday   ? "rgba(255,204,0,0.06)"
+                            :             "rgba(255,255,255,0.02)",
                 border:       `1px solid ${isToday ? "rgba(255,204,0,0.22)" : "rgba(255,255,255,0.06)"}`,
+                opacity:      isWeekOff ? 0.45 : 1,
               }}
             >
               {/* Day header */}
@@ -57,7 +75,14 @@ function MobileView({ title, headers, rows, highlightDay }) {
                     TOMORROW
                   </span>
                 )}
-                {!hasAny && (
+                {isWeekOff && (
+                  <span style={{ fontSize: "9px", color: "rgba(255,255,255,0.25)", fontFamily: "'Syncopate',sans-serif",
+                    letterSpacing: "0.1em", background: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.08)", borderRadius: "20px", padding: "2px 8px" }}>
+                    WEEK OFF
+                  </span>
+                )}
+                {!isWeekOff && !hasAny && (
                   <span style={{ fontSize: "10px", color: "rgba(255,255,255,0.1)" }}>No bookings</span>
                 )}
               </div>
@@ -86,7 +111,7 @@ function MobileView({ title, headers, rows, highlightDay }) {
 }
 
 /* ── Desktop view — full table ───────────────────────────── */
-function DesktopView({ title, headers, rows, highlightDay }) {
+function DesktopView({ title, headers, rows, highlightDay, weekOffDays = [] }) {
   return (
     <div className="card-elite">
       <span className="tag">{title}</span>
@@ -99,14 +124,22 @@ function DesktopView({ title, headers, rows, highlightDay }) {
           </thead>
           <tbody>
             {rows.map((row) => {
-              const dayLabel = row[0];
-              const isToday  = dayLabel === highlightDay;
+              const dayLabel  = row[0];
+              const isToday   = dayLabel === highlightDay;
+              const isWeekOff = weekOffDays.includes(dayLabel);
               return (
-                <tr key={dayLabel} style={isToday ? { background: "rgba(255,204,0,0.04)" } : {}}>
+                <tr key={dayLabel} style={{
+                  background: isToday ? "rgba(255,204,0,0.04)" : "transparent",
+                  opacity: isWeekOff ? 0.38 : 1,
+                }}>
                   <td className="day-label" style={isToday ? { color: "#ffcc00", fontWeight: 800 } : {}}>
                     {dayLabel}
                     {isToday && (
                       <span style={{ fontSize: "0.5rem", display: "block", color: "#ffcc00", opacity: 0.6 }}>TOMORROW</span>
+                    )}
+                    {isWeekOff && (
+                      <span style={{ fontSize: "0.48rem", display: "block", color: "rgba(255,255,255,0.3)",
+                        fontFamily: "'Syncopate',sans-serif", letterSpacing: "0.08em", marginTop: "2px" }}>WEEK OFF</span>
                     )}
                   </td>
                   {row.slice(1).map((cell, i) => {
@@ -135,7 +168,7 @@ function DesktopView({ title, headers, rows, highlightDay }) {
 }
 
 /* ── Main export — switches view based on screen width ───── */
-export default function ShiftGrid({ title, headers, rows, highlightDay }) {
+export default function ShiftGrid({ title, headers, rows, highlightDay, weekOffDays = [] }) {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 640);
 
   useEffect(() => {
@@ -145,6 +178,6 @@ export default function ShiftGrid({ title, headers, rows, highlightDay }) {
   }, []);
 
   return isMobile
-    ? <MobileView    title={title} headers={headers} rows={rows} highlightDay={highlightDay} />
-    : <DesktopView   title={title} headers={headers} rows={rows} highlightDay={highlightDay} />;
+    ? <MobileView  title={title} headers={headers} rows={rows} highlightDay={highlightDay} weekOffDays={weekOffDays} />
+    : <DesktopView title={title} headers={headers} rows={rows} highlightDay={highlightDay} weekOffDays={weekOffDays} />;
 }

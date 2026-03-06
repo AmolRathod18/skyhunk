@@ -278,21 +278,24 @@ const STEPS = [
 ];
 
 const TIME_SLOTS = [
-  { value: "7-8 AM",   label: "7:00 – 8:00 AM" },
-  { value: "8-9 AM",   label: "8:00 – 9:00 AM" },
-  { value: "9-10 AM",  label: "9:00 – 10:00 AM" },
-  { value: "10-11 AM", label: "10:00 – 11:00 AM" },
-  { value: "11-12 PM", label: "11:00 AM – 12:00 PM" },
-  { value: "6-7 PM",   label: "6:00 – 7:00 PM" },
-  { value: "7-8 PM",   label: "7:00 – 8:00 PM" },
-  { value: "8-9 PM",   label: "8:00 – 9:00 PM" },
-  { value: "9-10 PM",  label: "9:00 – 10:00 PM" },
+  // Morning — 6 AM to 11 AM
+  { value: "6-7 AM",   label: "6:00 – 7:00 AM   (Morning)" },
+  { value: "7-8 AM",   label: "7:00 – 8:00 AM   (Morning)" },
+  { value: "8-9 AM",   label: "8:00 – 9:00 AM   (Morning)" },
+  { value: "9-10 AM",  label: "9:00 – 10:00 AM  (Morning)" },
+  { value: "10-11 AM", label: "10:00 – 11:00 AM (Morning)" },
+  // Evening — 5 PM to 10 PM
+  { value: "5-6 PM",   label: "5:00 – 6:00 PM   (Evening)" },
+  { value: "6-7 PM",   label: "6:00 – 7:00 PM   (Evening)" },
+  { value: "7-8 PM",   label: "7:00 – 8:00 PM   (Evening)" },
+  { value: "8-9 PM",   label: "8:00 – 9:00 PM   (Evening)" },
+  { value: "9-10 PM",  label: "9:00 – 10:00 PM  (Evening)" },
 ];
 
 const INITIAL_VALUES = {
   clientName: "", age: "", gender: "Male", height: "", experience: "Beginner", medicalFlag: "None",
   trainer: "Akash Athavani",
-  preferredSlot: "7-8 AM",
+  preferredSlot: "6-7 AM",
   primaryGoal: "Weight Loss", targetWeeks: "12", sessionsPerWeek: "3",
   weight: "", fat: "", muscle: "",
   squats: "", pushups: "", rows: "",

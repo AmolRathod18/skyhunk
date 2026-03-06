@@ -140,7 +140,6 @@ export default function LandingPage({ onStart, onDashboard, onNutrition }) {
         >
           <source src="/gym_background_video.mp4" type="video/mp4" />
         </video>
-
         {/* ── Dark gradient overlay on top of video ── */}
         <div style={{
           position: "absolute",

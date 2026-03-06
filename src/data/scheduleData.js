@@ -1,39 +1,56 @@
 // ============================================================
-// scheduleData.js — All roster and daily protocol data
+// scheduleData.js — Trainer Akash (SkyHunk) real client roster
 // Edit client names / slots here — no component changes needed
 // ============================================================
 
-// Morning Shift 7am – 12pm
-// Columns: [Day,  7-8,          8-9,       9-10,      10-11,     11-12]
+// Trainer: Akash (SkyHunk)
+// Morning Shift: 6 AM – 11 AM  |  Evening Shift: 5 PM – 10 PM
+// Saturday: Week Off
+
+// ── Morning Schedule ─────────────────────────────────────────
+// Columns: [Day, 6-7, 7-8, 8-9, 9-10, 10-11]
+// Sun / Tue / Thu pattern
+const morningA = ["Sreelekshmi", "Guphtak",            "Indra",  "Aswathy", ""];
+// Mon / Wed / Fri pattern
+const morningB = ["Darshan",     "Shri Raksha & Aman", "Nitin",  "Bhargav", "Homesh & Pavitra"];
+
 export const morning = [
-  ["Sun", "",            "Nitin",   "",        "Aswathy", ""],
-  ["Mon", "Shri Raksha", "Guphtak", "Bhargav", "",        "Bishnu"],
-  ["Tue", "",            "Nitin",   "",        "Aswathy", ""],
-  ["Wed", "Shri Raksha", "Guphtak", "Bhargav", "",        "Bishnu"],
-  ["Thu", "",            "Nitin",   "",        "Aswathy", ""],
-  ["Fri", "Shri Raksha", "Guphtak", "Bhargav", "",        "Bishnu"],
-  ["Sat", "WEEK",        "OFF",     "WEEK",    "OFF",     "WEEK"],
+  ["Sun", ...morningA],
+  ["Mon", ...morningB],
+  ["Tue", ...morningA],
+  ["Wed", ...morningB],
+  ["Thu", ...morningA],
+  ["Fri", ...morningB],
+  ["Sat", "",  "", "", "", ""],   // Week Off
 ];
 
-// Evening Shift 6pm – 10pm
-// Columns: [Day,  6-7,    7-8,      8-9,       9-10]
+// ── Evening Schedule ──────────────────────────────────────────
+// Columns: [Day, 5-6, 6-7, 7-8, 8-9, 9-10]
+// Sun / Tue / Thu pattern
+const eveningA = ["Bishnu",  "Shweta",  "Ishan",              "Kalyani", ""];
+// Mon / Wed / Fri pattern
+const eveningB = ["",        "Pallavi", "Balaji & Anupriya",  "Jatin",   "Ashesh"];
+
 export const evening = [
-  ["Sun", "",     "Balaji", "",        ""],
-  ["Mon", "",     "",       "Kalyani", ""],
-  ["Tue", "",     "Balaji", "",        ""],
-  ["Wed", "",     "",       "Kalyani", ""],
-  ["Thu", "",     "Balaji", "",        ""],
-  ["Fri", "",     "",       "Kalyani", ""],
-  ["Sat", "WEEK", "OFF",   "WEEK",    "OFF"],
+  ["Sun", ...eveningA],
+  ["Mon", ...eveningB],
+  ["Tue", ...eveningA],
+  ["Wed", ...eveningB],
+  ["Thu", ...eveningA],
+  ["Fri", ...eveningB],
+  ["Sat", "", "", "", "", ""],    // Week Off
 ];
+
+// Days that have no sessions (used by ShiftGrid for "WEEK OFF" badge)
+export const WEEK_OFF_DAYS = ["Sat"];
 
 // Daily High-Performance Protocol
 // Columns: [Time, Activity, Purpose]
 export const dailyProtocol = [
   ["04:40 AM", "Wake Up + Hydrate", "Hormonal Reset"],
   ["05:00 AM", "Personal Training", "ICN Prep Strength"],
-  ["07:00 AM", "Morning Shift",     "Client Coaching"],
+  ["06:00 AM", "Morning Shift",     "Client Coaching"],
   ["01:00 PM", "Power Nap",         "CNS Recovery"],
-  ["06:00 PM", "Evening Shift",     "Client Coaching"],
+  ["05:00 PM", "Evening Shift",     "Client Coaching"],
   ["11:00 PM", "Deep Sleep",        "Full Recovery"],
 ];
