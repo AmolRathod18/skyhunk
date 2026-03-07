@@ -38,7 +38,7 @@ function buildGridFromStatic(staticData) {
   ]);
 }
 
-// Merge real schedule (baseline) with newly registered clients for tomorrow's row
+// Merge real schedule (baseline) with newly registered clients across all their selected days
 function buildMergedGrids(clients) {
   // Deep-clone static data to avoid mutating the import across renders
   const morningGrid = buildGridFromStatic(morning); // 5 cols: 6-7,7-8,8-9,9-10,10-11
@@ -47,7 +47,6 @@ function buildMergedGrids(clients) {
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   const tomorrowDay = dayName(tomorrow);
-  const rowIdx = DAY_ROW[tomorrowDay];
 
   const errors = []; // track edge-case issues
 
@@ -61,26 +60,37 @@ function buildMergedGrids(clients) {
       return;
     }
 
-    // Edge case 2 — Sat is WEEK OFF, block booking
-    if (WEEK_OFF_DAYS.includes(tomorrowDay)) {
-      errors.push({ client, reason: "Saturday is week off — slot not available" });
-      return;
-    }
+    // Use selectedDays array; fall back to tomorrow for legacy clients that have none
+    const days = client.selectedDays && client.selectedDays.length > 0
+      ? client.selectedDays
+      : [tomorrowDay];
 
-    const grid = cfg.shift === "morning" ? morningGrid : eveningGrid;
-    const cell = grid[rowIdx]?.[cfg.col];
+    days.forEach((day) => {
+      const rowIdx = DAY_ROW[day];
+      if (rowIdx === undefined) return;
 
-    // Edge case 3 — slot already occupied (by static or another new client)
-    const alreadyBooked = Array.isArray(cell) && cell.length > 0;
-    if (alreadyBooked) {
-      errors.push({ client, reason: `Slot ${slot} on ${tomorrowDay} already booked` });
-      // Still add — trainer can decide; mark as overlap
-      grid[rowIdx][cfg.col] = [...cell, "★" + client.clientName + " ⚠"];
-      return;
-    }
+      // Edge case 2 — week-off day
+      if (WEEK_OFF_DAYS.includes(day)) {
+        errors.push({ client, reason: `${day} is week off — slot not available` });
+        return;
+      }
 
-    // Normal — inject new client with ★ prefix so ShiftGrid styles it as new
-    grid[rowIdx][cfg.col] = ["★" + client.clientName];
+      const grid = cfg.shift === "morning" ? morningGrid : eveningGrid;
+      const cell = grid[rowIdx]?.[cfg.col];
+      if (!Array.isArray(cell)) return;
+
+      // Edge case 3 — slot/day already occupied
+      const alreadyBooked = cell.length > 0;
+      if (alreadyBooked) {
+        errors.push({ client, reason: `Slot ${slot} on ${day} already booked` });
+        // Still add — trainer can decide; mark as overlap
+        grid[rowIdx][cfg.col] = [...cell, "★" + client.clientName + " ⚠"];
+        return;
+      }
+
+      // Normal — inject new client with ★ prefix so ShiftGrid styles it as new
+      grid[rowIdx][cfg.col] = ["★" + client.clientName];
+    });
   });
 
   return {
@@ -153,11 +163,15 @@ function getSessionPlan(goal, experience) {
 
 // ── Client Profile Drawer (slide-up sheet) ─────────────────────
 function ClientProfileDrawer({ client, onClose, onDelete }) {
-  const goalColor  = GOAL_COLOR[client.primaryGoal] || "#ffcc00";
-  const cfg        = SLOT_CONFIG[client.preferredSlot];
-  const shiftLabel = cfg ? (cfg.shift === "morning" ? "☀ Morning" : "🌙 Evening") : "—";
-  const plan       = getSessionPlan(client.primaryGoal, client.experience);
-  const medNote    = (client.medicalFlag && client.medicalFlag !== "None")
+  const goalColor   = GOAL_COLOR[client.primaryGoal] || "#ffcc00";
+  const cfg         = SLOT_CONFIG[client.preferredSlot];
+  const shiftLabel  = cfg ? (cfg.shift === "morning" ? "☀ Morning" : "🌙 Evening") : "—";
+  const daysDisplay = client.selectedDays && client.selectedDays.length > 0
+    ? client.selectedDays.join(" · ")
+    : "—";
+  const weeklyPlanDisplay = client.weeklyPlan || `${client.sessionsPerWeek}×/week`;
+  const plan    = getSessionPlan(client.primaryGoal, client.experience);
+  const medNote = (client.medicalFlag && client.medicalFlag !== "None")
     ? (MEDICAL_NOTES[client.medicalFlag] || `Client has ${client.medicalFlag}. Adjust training accordingly.`)
     : null;
   const regDate = client.registeredAt
@@ -254,16 +268,34 @@ function ClientProfileDrawer({ client, onClose, onDelete }) {
           </div>
 
           {/* ── Training info row ── */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "14px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "10px" }}>
             <div style={{ background: "rgba(255,204,0,0.04)", border: "1px solid rgba(255,204,0,0.12)", borderRadius: "12px", padding: "12px 14px" }}>
               <p style={{ fontSize: "8px", color: "#555", margin: "0 0 4px", textTransform: "uppercase", letterSpacing: "0.08em" }}>Training Slot</p>
               <p style={{ fontSize: "13px", fontWeight: 700, color: "#ffcc00", margin: "0 0 2px" }}>{client.preferredSlot}</p>
               <p style={{ fontSize: "10px", color: "#444", margin: 0 }}>{shiftLabel}</p>
             </div>
             <div style={{ background: "rgba(0,255,213,0.04)", border: "1px solid rgba(0,255,213,0.12)", borderRadius: "12px", padding: "12px 14px" }}>
-              <p style={{ fontSize: "8px", color: "#555", margin: "0 0 4px", textTransform: "uppercase", letterSpacing: "0.08em" }}>Sessions / Week</p>
-              <p style={{ fontSize: "13px", fontWeight: 700, color: "#00ffd5", margin: "0 0 2px" }}>{client.sessionsPerWeek}×/week</p>
+              <p style={{ fontSize: "8px", color: "#555", margin: "0 0 4px", textTransform: "uppercase", letterSpacing: "0.08em" }}>Weekly Plan</p>
+              <p style={{ fontSize: "13px", fontWeight: 700, color: "#00ffd5", margin: "0 0 2px" }}>{weeklyPlanDisplay}</p>
               <p style={{ fontSize: "10px", color: "#444", margin: 0 }}>{client.gender || "—"} · {client.experience}</p>
+            </div>
+          </div>
+          {/* ── Training days strip ── */}
+          <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "12px", padding: "12px 14px", marginBottom: "14px" }}>
+            <p style={{ fontSize: "8px", color: "#555", margin: "0 0 8px", textTransform: "uppercase", letterSpacing: "0.08em" }}>Training Days</p>
+            <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+              {["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map((day) => {
+                const active = (client.selectedDays || []).includes(day);
+                return (
+                  <span key={day} style={{
+                    fontSize: "10px", fontWeight: active ? 800 : 400,
+                    padding: "4px 10px", borderRadius: "8px",
+                    background: active ? "rgba(255,204,0,0.12)" : "rgba(255,255,255,0.03)",
+                    border: `1px solid ${active ? "rgba(255,204,0,0.4)" : "rgba(255,255,255,0.06)"}`,
+                    color: active ? "#ffcc00" : "#333",
+                  }}>{day}</span>
+                );
+              })}
             </div>
           </div>
 
@@ -332,13 +364,13 @@ function ClientProfileDrawer({ client, onClose, onDelete }) {
 }
 
 // ── Pending-clients card list ─────────────────────────────────
-function ClientCard({ client, onDelete, onView, tomorrowDay }) {
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const dateStr = tomorrow.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
-  const goalColor = GOAL_COLOR[client.primaryGoal] || "#ffcc00";
-  const cfg = SLOT_CONFIG[client.preferredSlot];
+function ClientCard({ client, onDelete, onView }) {
+  const goalColor  = GOAL_COLOR[client.primaryGoal] || "#ffcc00";
+  const cfg        = SLOT_CONFIG[client.preferredSlot];
   const shiftLabel = cfg ? (cfg.shift === "morning" ? "Morning" : "Evening") : "Unknown";
+  const daysLabel  = client.selectedDays && client.selectedDays.length > 0
+    ? client.selectedDays.join(", ")
+    : "—";
 
   return (
     <div
@@ -390,12 +422,12 @@ function ClientCard({ client, onDelete, onView, tomorrowDay }) {
           <p className="text-xs font-bold mt-0.5" style={{ color: goalColor }}>{client.primaryGoal}</p>
         </div>
         <div className="text-center border-x" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
-          <p className="text-xs text-gray-600">Shift</p>
-          <p className="text-xs font-bold text-white mt-0.5">{shiftLabel}</p>
+          <p className="text-xs text-gray-600">Slot</p>
+          <p className="text-xs font-bold text-white mt-0.5">{client.preferredSlot}</p>
         </div>
         <div className="text-center">
-          <p className="text-xs text-gray-600">Sessions</p>
-          <p className="text-xs font-bold text-white mt-0.5">{client.sessionsPerWeek}×/wk</p>
+          <p className="text-xs text-gray-600">Days</p>
+          <p className="text-xs font-bold text-white mt-0.5">{client.selectedDays ? client.selectedDays.length + "d/wk" : shiftLabel}</p>
         </div>
       </div>
 
@@ -406,8 +438,8 @@ function ClientCard({ client, onDelete, onView, tomorrowDay }) {
           <p className="text-xs font-bold" style={{ color: "#00ffd5" }}>{client.trainer}</p>
         </div>
         <div className="text-right">
-          <p className="text-xs text-gray-600">Slot — {dateStr}</p>
-          <p className="text-xs font-bold text-white">{client.preferredSlot}</p>
+          <p className="text-xs text-gray-600">Training Days</p>
+          <p className="text-xs font-bold text-white">{daysLabel}</p>
         </div>
       </div>
 
@@ -470,7 +502,7 @@ export default function RosterTab() {
               style={{ background: "rgba(255,204,0,0.15)", border: "1px solid rgba(255,204,0,0.3)" }}>
               {clients.length}
             </span>
-            NEW CLIENTS — appearing in {tomorrowDay} roster
+            NEW CLIENTS — injected across selected days
           </h3>
           {clients.map((c) => (
             <ClientCard
@@ -478,7 +510,6 @@ export default function RosterTab() {
               client={c}
               onDelete={handleDelete}
               onView={() => setSelectedClient(c)}
-              tomorrowDay={tomorrowDay}
             />
           ))}
         </div>

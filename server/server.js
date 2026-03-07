@@ -47,6 +47,9 @@ const clientSchema = new mongoose.Schema(
     bmi:             String,
     trainer:         String,
     preferredSlot:   String,
+    selectedDays:    [String],
+    weeklyPlan:      String,
+    startDate:       { type: Date, default: Date.now },
     registeredAt:    { type: Date, default: Date.now },
   },
   { timestamps: true }
@@ -77,11 +80,18 @@ app.post("/api/clients", async (req, res) => {
   try {
     const data = req.body;
 
-    // Slot conflict check — same slot already taken for tomorrow-ish
-    const conflict = await Client.findOne({ preferredSlot: data.preferredSlot });
+    // Conflict check — same slot AND at least one overlapping day
+    const incomingDays = Array.isArray(data.selectedDays) ? data.selectedDays : [];
+    const conflict = incomingDays.length > 0
+      ? await Client.findOne({ preferredSlot: data.preferredSlot, selectedDays: { $in: incomingDays } })
+      : await Client.findOne({ preferredSlot: data.preferredSlot });
     if (conflict) {
+      const conflictDays = Array.isArray(conflict.selectedDays)
+        ? conflict.selectedDays.filter((d) => incomingDays.includes(d))
+        : [];
+      const dayStr = conflictDays.length ? ` on ${conflictDays.join(", ")}` : "";
       return res.status(409).json({
-        error: `Slot "${data.preferredSlot}" is already booked by ${conflict.clientName}.`,
+        error: `Slot "${data.preferredSlot}"${dayStr} is already booked by ${conflict.clientName}.`,
       });
     }
 

@@ -43,14 +43,42 @@ const STEPS = [
     subtitle: "Basic details about the client",
     icon: "👤",
     render: (v, sv) => {
-      // ── Live slot-conflict check ──────────────────────────
-      const existing      = JSON.parse(localStorage.getItem("gym_clients") || "[]");
-      const conflictClient = existing.find(
-        (c) => c.preferredSlot === v.preferredSlot
+      const DAYS         = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+      const WEEKLY_PLANS = ["3 days/week", "5 days/week", "Daily (7 days)"];
+      const existing     = JSON.parse(localStorage.getItem("gym_clients") || "[]");
+      const selectedDays = v.selectedDays || [];
+
+      // Conflict: same slot AND any overlapping selected day
+      const conflictEntry = existing.find(
+        (c) =>
+          c.preferredSlot === v.preferredSlot &&
+          (c.selectedDays || []).some((d) => selectedDays.includes(d))
       );
-      const isSlotTaken    = !!conflictClient;
-      const isReturning    = v.clientName.trim() &&
+      const conflictDays = conflictEntry
+        ? (conflictEntry.selectedDays || []).filter((d) => selectedDays.includes(d))
+        : [];
+      const isReturning = v.clientName.trim() &&
         existing.find((c) => c.clientName.trim().toLowerCase() === v.clientName.trim().toLowerCase());
+
+      function toggleDay(day) {
+        sv((p) => ({
+          ...p,
+          selectedDays: p.selectedDays.includes(day)
+            ? p.selectedDays.filter((d) => d !== day)
+            : [...p.selectedDays, day],
+        }));
+      }
+
+      function handleWeeklyPlan(plan) {
+        sv((p) => ({
+          ...p,
+          weeklyPlan: plan,
+          selectedDays: plan === "Daily (7 days)" ? [...DAYS] : p.selectedDays,
+        }));
+      }
+
+      const morningSlots = TIME_SLOTS.filter((s) => s.value.includes("AM"));
+      const eveningSlots = TIME_SLOTS.filter((s) => s.value.includes("PM"));
 
       return (
         <div className="grid grid-cols-2 gap-4">
@@ -73,25 +101,144 @@ const STEPS = [
               </div>
             </div>
           </div>
+
+          {/* ── Time Slot — radio buttons ──────────────────────── */}
           <div className="col-span-2">
-            <Select label="Preferred Training Slot" id="preferredSlot" values={v} setValues={sv} options={TIME_SLOTS} />
-            {/* ── Slot conflict warning ── */}
-            {isSlotTaken ? (
-              <div className="mt-2 text-xs rounded-lg px-3 py-2 flex items-start gap-2"
-                style={{ background: "rgba(255,77,77,0.09)", color: "#ff4d4d", border: "1px solid rgba(255,77,77,0.25)" }}>
-                <span>🚫</span>
-                <span>
-                  <strong>{v.preferredSlot}</strong> is already booked by <strong>{conflictClient.clientName}</strong>.
-                  Please choose a different slot.
-                </span>
+            <label className="field-label" style={{ display: "block", marginBottom: "10px" }}>
+              Preferred Training Slot
+            </label>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+              {/* Morning column */}
+              <div>
+                <p style={{ fontSize: "10px", fontWeight: 800, color: "#ffcc00", marginBottom: "8px",
+                  fontFamily: "'Syncopate',sans-serif", letterSpacing: "0.08em" }}>☀ MORNING</p>
+                {morningSlots.map((slot) => (
+                  <label key={slot.value} style={{
+                    display: "flex", alignItems: "center", gap: "8px",
+                    padding: "8px 12px", borderRadius: "10px", marginBottom: "6px", cursor: "pointer",
+                    background: v.preferredSlot === slot.value ? "rgba(255,204,0,0.1)" : "rgba(255,255,255,0.03)",
+                    border: `1px solid ${v.preferredSlot === slot.value ? "rgba(255,204,0,0.4)" : "rgba(255,255,255,0.07)"}`,
+                    color: v.preferredSlot === slot.value ? "#ffcc00" : "#888",
+                    fontSize: "12px", fontWeight: v.preferredSlot === slot.value ? 700 : 400,
+                    transition: "all 0.15s",
+                  }}>
+                    <input type="radio" name="preferredSlot" value={slot.value}
+                      checked={v.preferredSlot === slot.value}
+                      onChange={() => sv((p) => ({ ...p, preferredSlot: slot.value }))}
+                      style={{ accentColor: "#ffcc00" }} />
+                    {slot.value}
+                  </label>
+                ))}
               </div>
-            ) : (
-              <div className="mt-2 text-xs rounded-lg px-3 py-1.5 flex items-center gap-2"
-                style={{ background: "rgba(0,255,213,0.05)", color: "#00ffd5", border: "1px solid rgba(0,255,213,0.15)" }}>
-                <span>✅</span> Slot available
+              {/* Evening column */}
+              <div>
+                <p style={{ fontSize: "10px", fontWeight: 800, color: "#00bfff", marginBottom: "8px",
+                  fontFamily: "'Syncopate',sans-serif", letterSpacing: "0.08em" }}>🌙 EVENING</p>
+                {eveningSlots.map((slot) => (
+                  <label key={slot.value} style={{
+                    display: "flex", alignItems: "center", gap: "8px",
+                    padding: "8px 12px", borderRadius: "10px", marginBottom: "6px", cursor: "pointer",
+                    background: v.preferredSlot === slot.value ? "rgba(0,191,255,0.1)" : "rgba(255,255,255,0.03)",
+                    border: `1px solid ${v.preferredSlot === slot.value ? "rgba(0,191,255,0.4)" : "rgba(255,255,255,0.07)"}`,
+                    color: v.preferredSlot === slot.value ? "#00bfff" : "#888",
+                    fontSize: "12px", fontWeight: v.preferredSlot === slot.value ? 700 : 400,
+                    transition: "all 0.15s",
+                  }}>
+                    <input type="radio" name="preferredSlot" value={slot.value}
+                      checked={v.preferredSlot === slot.value}
+                      onChange={() => sv((p) => ({ ...p, preferredSlot: slot.value }))}
+                      style={{ accentColor: "#00bfff" }} />
+                    {slot.value}
+                  </label>
+                ))}
               </div>
+            </div>
+          </div>
+
+          {/* ── Weekly Attendance Plan — radio buttons ──────────── */}
+          <div className="col-span-2">
+            <label className="field-label" style={{ display: "block", marginBottom: "10px" }}>
+              Weekly Attendance Plan
+            </label>
+            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+              {WEEKLY_PLANS.map((plan) => (
+                <label key={plan} style={{
+                  display: "flex", alignItems: "center", gap: "7px",
+                  padding: "8px 14px", borderRadius: "10px", cursor: "pointer",
+                  background: v.weeklyPlan === plan ? "rgba(0,255,213,0.1)" : "rgba(255,255,255,0.03)",
+                  border: `1px solid ${v.weeklyPlan === plan ? "rgba(0,255,213,0.4)" : "rgba(255,255,255,0.07)"}`,
+                  color: v.weeklyPlan === plan ? "#00ffd5" : "#888",
+                  fontSize: "12px", fontWeight: v.weeklyPlan === plan ? 700 : 400,
+                  transition: "all 0.15s",
+                }}>
+                  <input type="radio" name="weeklyPlan" value={plan}
+                    checked={v.weeklyPlan === plan}
+                    onChange={() => handleWeeklyPlan(plan)}
+                    style={{ accentColor: "#00ffd5" }} />
+                  {plan}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Training Days — checkboxes ────────────────────── */}
+          <div className="col-span-2">
+            <label className="field-label" style={{ display: "block", marginBottom: "10px" }}>
+              Training Days <span style={{ color: "#555", fontWeight: 400 }}>(select all that apply)</span>
+            </label>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+              {DAYS.map((day) => {
+                const checked = selectedDays.includes(day);
+                const isSat   = day === "Sat";
+                return (
+                  <label key={day} style={{
+                    display: "flex", alignItems: "center", gap: "6px",
+                    padding: "7px 13px", borderRadius: "10px",
+                    cursor: isSat ? "default" : "pointer",
+                    background: isSat ? "rgba(255,255,255,0.02)" : checked ? "rgba(255,204,0,0.12)" : "rgba(255,255,255,0.03)",
+                    border: `1px solid ${isSat ? "rgba(255,255,255,0.04)" : checked ? "rgba(255,204,0,0.45)" : "rgba(255,255,255,0.07)"}`,
+                    color: isSat ? "#333" : checked ? "#ffcc00" : "#777",
+                    fontSize: "12px", fontWeight: checked ? 700 : 400,
+                    transition: "all 0.15s", opacity: isSat ? 0.4 : 1,
+                  }}>
+                    <input type="checkbox" checked={checked} disabled={isSat}
+                      onChange={() => !isSat && toggleDay(day)}
+                      style={{ accentColor: "#ffcc00" }} />
+                    {day}
+                    {isSat && <span style={{ fontSize: "8px", marginLeft: "2px" }}>OFF</span>}
+                  </label>
+                );
+              })}
+            </div>
+            {selectedDays.length > 0 && (
+              <p style={{ marginTop: "8px", fontSize: "11px", color: "rgba(255,255,255,0.3)" }}>
+                {selectedDays.length} day{selectedDays.length > 1 ? "s" : ""} selected: {selectedDays.join(", ")}
+              </p>
             )}
           </div>
+
+          {/* ── Slot / Day availability indicator ────────────── */}
+          {conflictEntry ? (
+            <div className="col-span-2 text-xs rounded-lg px-3 py-2 flex items-start gap-2"
+              style={{ background: "rgba(255,77,77,0.09)", color: "#ff4d4d", border: "1px solid rgba(255,77,77,0.25)" }}>
+              <span>🚫</span>
+              <span>
+                <strong>{v.preferredSlot}</strong> on <strong>{conflictDays.join(", ")}</strong> is already
+                booked by <strong>{conflictEntry.clientName}</strong>. Please select different days or a different slot.
+              </span>
+            </div>
+          ) : selectedDays.length > 0 ? (
+            <div className="col-span-2 text-xs rounded-lg px-3 py-1.5 flex items-center gap-2"
+              style={{ background: "rgba(0,255,213,0.05)", color: "#00ffd5", border: "1px solid rgba(0,255,213,0.15)" }}>
+              <span>✅</span> {v.preferredSlot} — {selectedDays.join(", ")} — Available
+            </div>
+          ) : (
+            <div className="col-span-2 text-xs rounded-lg px-3 py-1.5 flex items-center gap-2"
+              style={{ background: "rgba(255,204,0,0.04)", color: "#666", border: "1px solid rgba(255,255,255,0.06)" }}>
+              <span>☝</span> Select at least one training day above
+            </div>
+          )}
+
           <div className="col-span-2">
             <Select label="Medical Condition / Flag" id="medicalFlag" values={v} setValues={sv}
               options={["None", "Knee Pain", "Lower Back Pain", "Shoulder Injury", "Hypertension", "Diabetes", "Post Surgery"]} />
@@ -108,11 +255,18 @@ const STEPS = [
     },
     validate: (v) => {
       if (!v.clientName.trim()) return "Please enter client name.";
-      // Block booking if slot is already taken
+      if (!v.selectedDays || v.selectedDays.length === 0)
+        return "Please select at least one training day.";
       const existing = JSON.parse(localStorage.getItem("gym_clients") || "[]");
-      const conflict  = existing.find((c) => c.preferredSlot === v.preferredSlot);
-      if (conflict)
-        return `Slot "${v.preferredSlot}" is already booked by ${conflict.clientName}. Please choose another slot to continue.`;
+      const conflictEntry = existing.find(
+        (c) =>
+          c.preferredSlot === v.preferredSlot &&
+          (c.selectedDays || []).some((d) => v.selectedDays.includes(d))
+      );
+      if (conflictEntry) {
+        const conflictDays = (conflictEntry.selectedDays || []).filter((d) => v.selectedDays.includes(d));
+        return `Slot "${v.preferredSlot}" on ${conflictDays.join(", ")} is already booked by ${conflictEntry.clientName}. Please adjust your days or slot.`;
+      }
       return null;
     },
   },
@@ -295,7 +449,9 @@ const TIME_SLOTS = [
 const INITIAL_VALUES = {
   clientName: "", age: "", gender: "Male", height: "", experience: "Beginner", medicalFlag: "None",
   trainer: "Akash Athavani",
-  preferredSlot: "6-7 AM",
+  preferredSlot: "7-8 AM",
+  selectedDays: ["Mon", "Wed", "Fri"],
+  weeklyPlan: "3 days/week",
   primaryGoal: "Weight Loss", targetWeeks: "12", sessionsPerWeek: "3",
   weight: "", fat: "", muscle: "",
   squats: "", pushups: "", rows: "",

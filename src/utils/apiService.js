@@ -51,11 +51,18 @@ export async function saveClient(entry) {
   // ── localStorage first (so RosterTab stays real-time) ──
   const existing = lsRead();
 
-  // Local conflict check (fast, works offline)
-  const localConflict = existing.find((c) => c.preferredSlot === entry.preferredSlot);
+  // Local conflict check (fast, works offline) — per slot + day combination
+  const localConflict = existing.find(
+    (c) =>
+      c.preferredSlot === entry.preferredSlot &&
+      (c.selectedDays || []).some((d) => (entry.selectedDays || []).includes(d))
+  );
   if (localConflict) {
+    const conflictDays = (localConflict.selectedDays || []).filter((d) =>
+      (entry.selectedDays || []).includes(d)
+    );
     throw new Error(
-      `Slot "${entry.preferredSlot}" is already booked by ${localConflict.clientName}. Please choose another slot.`
+      `Slot "${entry.preferredSlot}" on ${conflictDays.join(", ")} is already booked by ${localConflict.clientName}. Please adjust your booking.`
     );
   }
 
