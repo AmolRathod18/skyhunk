@@ -7,19 +7,7 @@ import DailyOpsTab         from "./components/tabs/DailyOpsTab";
 import ClientDirectoryTab  from "./components/tabs/ClientDirectoryTab";
 import NutritionPage  from "./components/NutritionPage";
 import { generateReport } from "./utils/reportGenerator";
-import { saveClient }     from "./utils/apiService";
-import { morning, evening } from "./data/scheduleData";
-
-// Count unique named slots in the static schedule (17 real clients)
-const STATIC_CLIENT_COUNT = (function () {
-  const seen = new Set();
-  for (const row of [...morning, ...evening]) {
-    for (const cell of row.slice(1)) {
-      if (cell) seen.add(cell);
-    }
-  }
-  return seen.size;
-})();
+import { saveClient, getClients } from "./utils/apiService";
 
 // ── Parse raw string values from AssessmentWizard ────────────
 function parseValues(v) {
@@ -80,17 +68,22 @@ function getShiftStatus(h) {
 }
 
 function useTodayStats() {
-  const [stats, setStats] = useState({ totalClients: STATIC_CLIENT_COUNT, newToday: 0 });
+  const [stats, setStats] = useState({ totalClients: 0, newToday: 0 });
   useEffect(() => {
     function compute() {
-      const all = JSON.parse(localStorage.getItem("gym_clients") || "[]");
-      const todayStr = new Date().toDateString();
-      const newToday = all.filter(c => new Date(c.registeredAt).toDateString() === todayStr).length;
-      // Total = real schedule clients + newly registered (assessment) clients
-      setStats({ totalClients: STATIC_CLIENT_COUNT + all.length, newToday });
+      // totalClients = all clients in MongoDB (schedule + assessment)
+      getClients().then((all) => {
+        // newToday = only assessment clients registered today (in localStorage)
+        const assessmentClients = JSON.parse(localStorage.getItem("gym_clients") || "[]");
+        const todayStr  = new Date().toDateString();
+        const newToday  = assessmentClients.filter(
+          c => c.primaryGoal && new Date(c.registeredAt).toDateString() === todayStr
+        ).length;
+        setStats({ totalClients: all.length, newToday });
+      });
     }
     compute();
-    const id = setInterval(compute, 5000);
+    const id = setInterval(compute, 10000);
     return () => clearInterval(id);
   }, []);
   return stats;

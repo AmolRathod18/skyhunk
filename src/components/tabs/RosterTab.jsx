@@ -463,11 +463,12 @@ export default function RosterTab() {
   const [clients, setClients] = useState([]);
   const [selectedClient, setSelectedClient] = useState(null);
 
-  // Poll localStorage every 5 seconds so new assessments appear without refresh
+  // Poll localStorage every 5 seconds — only assessment clients have primaryGoal
   useEffect(() => {
     function load() {
       const raw = JSON.parse(localStorage.getItem("gym_clients") || "[]");
-      setClients(raw.slice().reverse());
+      const assessmentOnly = raw.filter(c => c.primaryGoal); // exclude schedule seeds
+      setClients(assessmentOnly.slice().reverse());
     }
     load();
     const id = setInterval(load, 5000);

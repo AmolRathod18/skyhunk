@@ -10,6 +10,16 @@ const LS_KEY   = "gym_clients";
 function lsRead()         { return JSON.parse(localStorage.getItem(LS_KEY) || "[]"); }
 function lsWrite(clients) { localStorage.setItem(LS_KEY, JSON.stringify(clients)); }
 
+// Remove any schedule/seed clients that were accidentally written to localStorage.
+// Assessment clients always have a primaryGoal field; schedule-only seeds don't.
+(function cleanupSeedPollution() {
+  const all = lsRead();
+  const assessmentOnly = all.filter(c => c.primaryGoal);
+  if (assessmentOnly.length !== all.length) {
+    lsWrite(assessmentOnly);
+  }
+})();
+
 async function apiFetch(path, options = {}) {
   const res = await fetch(`${API_BASE}${path}`, {
     headers: { "Content-Type": "application/json" },
@@ -32,12 +42,9 @@ async function apiFetch(path, options = {}) {
  */
 export async function getClients() {
   try {
-    const clients = await apiFetch("/api/clients");
-    // Keep localStorage in sync so RosterTab polling always works
-    lsWrite([...clients].reverse());
-    return clients;
+    return await apiFetch("/api/clients");
   } catch {
-    // Server offline — use localStorage
+    // Server offline — fall back to localStorage assessment clients
     return lsRead().slice().reverse();
   }
 }

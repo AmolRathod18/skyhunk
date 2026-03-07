@@ -1,33 +1,25 @@
 // ClientDirectoryTab.jsx — Visual client wall with profiles, notes & weekly calendar
 import { useState, useEffect } from "react";
+import { getClients } from "../../utils/apiService";
 
-// ── All 17 real schedule clients ──────────────────────────────
-// Training pattern A = Sun · Tue · Thu
-// Training pattern B = Mon · Wed · Fri
+// Training patterns
 const PATTERN_A = { days: ["Sun", "Tue", "Thu"], label: "SUN · TUE · THU" };
 const PATTERN_B = { days: ["Mon", "Wed", "Fri"], label: "MON · WED · FRI" };
 
-const ALL_CLIENTS = [
-  // ── Morning Shift ──────────────────────────────────────────
-  { id: "m1",  name: "Sreelekshmi",       slot: "6–7 AM",   shift: "morning", pattern: PATTERN_A, couples: false, color: "#ff6b9d" },
-  { id: "m2",  name: "Guphtak",           slot: "7–8 AM",   shift: "morning", pattern: PATTERN_A, couples: false, color: "#c77dff" },
-  { id: "m3",  name: "Indra",             slot: "8–9 AM",   shift: "morning", pattern: PATTERN_A, couples: false, color: "#4cc9f0" },
-  { id: "m4",  name: "Aswathy",           slot: "9–10 AM",  shift: "morning", pattern: PATTERN_A, couples: false, color: "#f77f00" },
-  { id: "m5",  name: "Darshan",           slot: "6–7 AM",   shift: "morning", pattern: PATTERN_B, couples: false, color: "#06d6a0" },
-  { id: "m6",  name: "Shri Raksha & Aman", slot: "7–8 AM",  shift: "morning", pattern: PATTERN_B, couples: true,  color: "#ff4d6d" },
-  { id: "m7",  name: "Nitin",             slot: "8–9 AM",   shift: "morning", pattern: PATTERN_B, couples: false, color: "#ffd60a" },
-  { id: "m8",  name: "Bhargav",           slot: "9–10 AM",  shift: "morning", pattern: PATTERN_B, couples: false, color: "#80b918" },
-  { id: "m9",  name: "Homesh & Pavitra",  slot: "10–11 AM", shift: "morning", pattern: PATTERN_B, couples: true,  color: "#ff9500" },
-  // ── Evening Shift ──────────────────────────────────────────
-  { id: "e1",  name: "Bishnu",            slot: "5–6 PM",   shift: "evening", pattern: PATTERN_A, couples: false, color: "#00b4d8" },
-  { id: "e2",  name: "Shweta",            slot: "6–7 PM",   shift: "evening", pattern: PATTERN_A, couples: false, color: "#e040fb" },
-  { id: "e3",  name: "Ishan",             slot: "7–8 PM",   shift: "evening", pattern: PATTERN_A, couples: false, color: "#26c6da" },
-  { id: "e4",  name: "Kalyani",           slot: "8–9 PM",   shift: "evening", pattern: PATTERN_A, couples: false, color: "#ff7043" },
-  { id: "e5",  name: "Pallavi",           slot: "6–7 PM",   shift: "evening", pattern: PATTERN_B, couples: false, color: "#ab47bc" },
-  { id: "e6",  name: "Balaji & Anupriya", slot: "7–8 PM",   shift: "evening", pattern: PATTERN_B, couples: true,  color: "#ef5350" },
-  { id: "e7",  name: "Jatin",             slot: "8–9 PM",   shift: "evening", pattern: PATTERN_B, couples: false, color: "#29b6f6" },
-  { id: "e8",  name: "Ashesh",            slot: "9–10 PM",  shift: "evening", pattern: PATTERN_B, couples: false, color: "#66bb6a" },
-];
+// Map a MongoDB client document → the shape used by this component
+function mapClient(c) {
+  const days    = Array.isArray(c.selectedDays) ? c.selectedDays : [];
+  const pattern = days.includes("Sun") ? PATTERN_A : PATTERN_B;
+  return {
+    id:      c.id   || String(c._id),
+    name:    c.clientName || c.name || "Unknown",
+    slot:    c.preferredSlot || c.slot || "",
+    shift:   c.shift   || "morning",
+    pattern,
+    couples: c.couples || false,
+    color:   c.color   || "#888",
+  };
+}
 
 const ALL_DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -193,7 +185,7 @@ function ClientCard({ client, notes, onSelect }) {
 }
 
 // ── Full Profile Drawer ───────────────────────────────────────
-function ProfileDrawer({ client, notes, onClose, onSaveNote }) {
+function ProfileDrawer({ client, notes, allClients, onClose, onSaveNote }) {
   const [note, setNote] = useState(notes[client.id] || "");
   const [saved, setSaved] = useState(false);
 
@@ -218,8 +210,8 @@ function ProfileDrawer({ client, notes, onClose, onSaveNote }) {
   const totalDays       = client.pattern.label;
 
   // "Training neighbours" — who else trains in the same days
-  const samePattern = ALL_CLIENTS.filter(
-    (c) => c.id !== client.id && c.pattern === client.pattern && c.shift === client.shift
+  const samePattern = allClients.filter(
+    (c) => c.id !== client.id && c.pattern.label === client.pattern.label && c.shift === client.shift
   );
 
   return (
@@ -433,17 +425,25 @@ function ProfileDrawer({ client, notes, onClose, onSaveNote }) {
 
 // ── Main export ───────────────────────────────────────────────
 export default function ClientDirectoryTab() {
+  const [clients,        setClients]        = useState([]);
+  const [loading,        setLoading]        = useState(true);
   const [notes,          setNotes]          = useState(loadNotes);
   const [selectedClient, setSelectedClient] = useState(null);
   const [shiftFilter,    setShiftFilter]    = useState("all"); // "all" | "morning" | "evening"
   const [search,         setSearch]         = useState("");
+
+  useEffect(() => {
+    getClients()
+      .then((data) => setClients(data.map(mapClient)))
+      .finally(() => setLoading(false));
+  }, []);
 
   function handleSaveNote(id, text) {
     saveNote(id, text);
     setNotes((prev) => ({ ...prev, [id]: text }));
   }
 
-  const filtered = ALL_CLIENTS.filter((c) => {
+  const filtered = clients.filter((c) => {
     const matchShift  = shiftFilter === "all" || c.shift === shiftFilter;
     const matchSearch = c.name.toLowerCase().includes(search.toLowerCase());
     return matchShift && matchSearch;
@@ -459,6 +459,7 @@ export default function ClientDirectoryTab() {
         <ProfileDrawer
           client={selectedClient}
           notes={notes}
+          allClients={clients}
           onClose={() => setSelectedClient(null)}
           onSaveNote={handleSaveNote}
         />
@@ -492,9 +493,9 @@ export default function ClientDirectoryTab() {
         {/* Shift filter pills */}
         <div style={{ display: "flex", gap: "6px" }}>
           {[
-            { id: "all",     label: "All 17",  count: ALL_CLIENTS.length },
-            { id: "morning", label: "☀ Morning", count: ALL_CLIENTS.filter(c => c.shift === "morning").length },
-            { id: "evening", label: "🌙 Evening", count: ALL_CLIENTS.filter(c => c.shift === "evening").length },
+            { id: "all",     label: "All",       count: clients.length },
+            { id: "morning", label: "☀ Morning", count: clients.filter(c => c.shift === "morning").length },
+            { id: "evening", label: "🌙 Evening", count: clients.filter(c => c.shift === "evening").length },
           ].map(({ id, label, count }) => {
             const active = shiftFilter === id;
             return (
@@ -571,8 +572,16 @@ export default function ClientDirectoryTab() {
         </div>
       )}
 
+      {/* Loading state */}
+      {loading && (
+        <div style={{ textAlign: "center", padding: "60px 20px" }}>
+          <p style={{ fontSize: "32px", marginBottom: "12px" }}>⏳</p>
+          <p style={{ color: "#555", fontSize: "13px", fontFamily: "'Syncopate',sans-serif", letterSpacing: "0.1em" }}>LOADING CLIENTS…</p>
+        </div>
+      )}
+
       {/* Empty state */}
-      {filtered.length === 0 && (
+      {!loading && filtered.length === 0 && (
         <div style={{ textAlign: "center", padding: "60px 20px" }}>
           <p style={{ fontSize: "32px", marginBottom: "12px" }}>🔍</p>
           <p style={{ color: "#555", fontSize: "13px" }}>No clients match "{search}"</p>

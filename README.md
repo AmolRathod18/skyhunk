@@ -1,16 +1,108 @@
-# React + Vite
+# SKYHUNK OS — Akash Athavani Trainer Dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A full-stack personal trainer operating system built with **React + Vite** (frontend) and **Express + MongoDB Atlas** (backend).
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Features
 
-## React Compiler
+- **Live Client Dashboard** — 17 real clients loaded from MongoDB Atlas
+- **Client Directory** — Visual profile cards with weekly training calendar per client
+- **Roster Tab** — Morning & Evening shift grid with slot-conflict detection
+- **Assessment Wizard** — Full client onboarding form (body stats, goals, medical flags)
+- **Session Plans** — Auto-generated 5-step training plans per goal & experience level
+- **24H Ops Tab** — Daily high-performance protocol timeline
+- **Nutrition Page** — Macro & meal planning reference
+- **PWA Ready** — Installable as a mobile app
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## Tech Stack
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+| Layer     | Tech                              |
+|-----------|-----------------------------------|
+| Frontend  | React 18, Vite, CSS-in-JS         |
+| Backend   | Node.js, Express 4                |
+| Database  | MongoDB Atlas (Mongoose 8)        |
+
+---
+
+## Project Structure
+
+```
+akash-react/
++-- src/
+¦   +-- App.jsx
+¦   +-- components/
+¦   ¦   +-- tabs/
+¦   ¦   ¦   +-- ClientDirectoryTab.jsx   # Client wall (DB-driven)
+¦   ¦   ¦   +-- RosterTab.jsx            # Schedule grid
+¦   ¦   ¦   +-- DailyOpsTab.jsx
+¦   ¦   +-- assessment/
+¦   ¦       +-- AssessmentForm.jsx
+¦   +-- data/scheduleData.js
+¦   +-- utils/apiService.js
++-- server/
+¦   +-- server.js         # Express API + Mongoose
+¦   +-- seed.js           # One-time DB seed (17 clients)
+¦   +-- .env.example
++-- index.html
+```
+
+---
+
+## Getting Started
+
+### 1. Clone
+
+```bash
+git clone https://github.com/AmolRathod18/skyhunk.git
+cd skyhunk
+```
+
+### 2. Backend setup
+
+```bash
+cd server
+cp .env.example .env
+# Fill in MONGO_URI in .env
+npm install
+node seed.js    # first time only — seeds 17 clients
+node server.js  # start API on port 4000
+```
+
+### 3. Frontend setup (new terminal)
+
+```bash
+cd ..
+npm install
+npm run dev     # http://localhost:5173
+```
+
+---
+
+## API Endpoints
+
+| Method | Route                  | Description           |
+|--------|------------------------|-----------------------|
+| GET    | `/api/clients`         | Fetch all clients     |
+| POST   | `/api/clients`         | Register new client   |
+| DELETE | `/api/clients/:id`     | Remove a client       |
+| GET    | `/api/slots/available` | Booked slot map       |
+
+---
+
+## Environment Variables
+
+Create `server/.env` (never commit this file):
+
+```env
+MONGO_URI=mongodb+srv://<user>:<password>@cluster0.xxxxx.mongodb.net/akash_trainer?retryWrites=true&w=majority
+PORT=4000
+```
+
+---
+
+## License
+
+Private — Akash Athavani Personal Training System © 2026

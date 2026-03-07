@@ -49,6 +49,9 @@ const clientSchema = new mongoose.Schema(
     preferredSlot:   String,
     selectedDays:    [String],
     weeklyPlan:      String,
+    shift:           String,   // "morning" | "evening"
+    couples:         Boolean,
+    color:           String,   // hex accent colour for UI
     startDate:       { type: Date, default: Date.now },
     registeredAt:    { type: Date, default: Date.now },
   },
